@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -10,9 +11,35 @@ namespace MuteThoseBloodyOwls
         {
             string applicationDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-            string assemblyPath = @"c:\Program Files\PlasticSCM5\client\plasticgui.dll";
             string alreadySeenFilePath = Path.Combine(applicationDataFolder, @"plastic4\guihelp-alreadyseen.conf");
             string doNotShowAgainPath = Path.Combine(applicationDataFolder, @"plastic4\guihelp-dontshowagain.conf");
+
+            string plasticInstallRegistryKeyName = @"SOFTWARE\Codice Software S.L.\Codice Software Plastic SCM";
+            string plasticInstallRegistryValueName = "Location";
+
+            string plasticInstallLocation = null;
+
+            using (RegistryKey localMachine = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+            {
+                using (RegistryKey installRoot = localMachine.OpenSubKey(plasticInstallRegistryKeyName, false))
+                {
+                    if (installRoot == null)
+                    {
+                        Console.WriteLine("Unable to find PlasticSCM installation location when looking into registry");
+                        return 1;
+                    }
+
+                    plasticInstallLocation = (string)installRoot.GetValue(plasticInstallRegistryValueName);
+
+                    if (plasticInstallLocation == null)
+                    {
+                        Console.WriteLine("Unable to find PlasticSCM installation location when looking into registry");
+                        return 1;
+                    }
+                }
+            }
+
+            string assemblyPath = Path.Combine(plasticInstallLocation, @"client\plasticgui.dll");
 
             Assembly plasticGuiAssembly = null;
 
